@@ -1,0 +1,39 @@
+#!/bin/bash
+for i in "$@"
+do
+  case $i in
+    -p=*|--prefix=*)
+      PREFIX="${i#*=}"
+      shift # past argument=value
+      ;;
+    *)
+      # unknown option
+      ;;
+  esac
+done
+if [ -z $PREFIX ]; then
+  echo "no --prefix"
+  exit 1
+fi
+
+if [ ! -w $PREFIX ]; then
+  echo "invalid prefix $PREFIX"
+  exit 1
+fi
+
+
+
+libs=$PREFIX/lib/postman/
+bin=$PREFIX/bin
+
+mkdir -p $bin
+mkdir -p $libs
+
+cp -r ./* $libs/
+rm $libs/Postman
+cp -r Postman $bin/postman
+
+find $PREFIX/
+
+
+exit 0

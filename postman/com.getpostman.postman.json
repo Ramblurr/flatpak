@@ -1,0 +1,33 @@
+{
+  "app-id": "com.getpostman.postman",
+  "runtime": "org.gnome.Platform",
+  "runtime-version": "3.24",
+  "sdk": "org.gnome.Sdk",
+  "command": "postman",
+  "finish-args": [
+    "--socket=wayland",
+    "--share=network"
+  ],
+  "modules": [
+    {
+      "name": "postman",
+      "sources": [
+        {
+          "type": "archive",
+          "path": "Postman-linux-x64-5.2.0.tar.gz",
+          "sha256": "ca805780d7e885209dc1aed50338231a8b78a196a316cb1af70b291ade04a2e2"
+        },
+        {
+          "type": "file",
+          "path": "postman-Makefile",
+          "dest-filename": "Makefile"
+        },
+        {
+          "type": "file",
+          "path": "postman-configure",
+          "dest-filename": "configure"
+        }
+      ]
+    }
+  ]
+}

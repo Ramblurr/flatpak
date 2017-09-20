@@ -1,0 +1,65 @@
+#!/bin/bash
+set -euo pipefail
+IFS=$'\n\t'
+
+do_updates=${1:-check}
+
+REPO=../repo
+
+#tmpdir=$(mktemp -d "${TMPDIR:-/tmp/}$(basename $0).XXXXXXXXXXXX")
+tmpdir=.
+
+updates_url="https://dl.pstmn.io/changelog?channel=stable&platform=linux"
+
+set +e
+curl --silent "$updates_url" > $tmpdir/versions
+if [ ! $? -eq 0 ]; then
+  echo "failed to check new postman versions"
+  echo "run curl '$updates_url'"
+  exit 1
+fi
+set -e
+
+set +e
+latest_version=`cat $tmpdir/versions | jq -r '.changelog[0].name'`
+latest_hash=`cat $tmpdir/versions | jq -r '.changelog[0].assets[0].hash'`
+latest_url=`cat $tmpdir/versions | jq -r '.changelog[0].assets[0].url'`
+latest_name=`cat $tmpdir/versions | jq -r '.changelog[0].assets[0].name'`
+
+
+installed_version=`flatpak info com.getpostman.postman 2>&1 | grep Ref | awk '{print $2}'`
+
+if [[ -z $installed_version ]]; then
+  installed_version="none"
+fi
+
+echo "Found version $latest_version Installed is '$installed_version'"
+
+if [[ $# -lt 1 ]]; then
+  echo "To download update run:"
+  echo "   $0 download"
+  exit 0;
+fi
+
+echo "Downloading version $latest_version"
+wget --continue "$latest_url" -O $latest_name
+
+hash_256=$(sha256sum $latest_name | awk '{print $1}')
+
+cat ./com.getpostman.postman.json | \
+  jq ".modules[0].sources[0].sha256 = \"$hash_256\"" | \
+  jq ".modules[0].sources[0].path= \"$latest_name\"" | \
+  sponge ./com.getpostman.postman.json
+
+
+if [[ $# -lt 2 ]]; then
+  echo "Download ready, to build run"
+  echo "   $0 update build"
+  exit 0;
+fi
+
+flatpak-builder --force-clean --repo=${REPO} build com.getpostman.postman.json
+flatpak build-bundle ${REPO} postman-${latest_version}.flatpak com.getpostman.postman
+
+echo "Build done, to install run: "
+echo "  flatpak install ./postman-${latest_version}.flatpak"
